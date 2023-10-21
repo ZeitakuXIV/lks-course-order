@@ -1,0 +1,41 @@
+version: 0.2
+
+env:
+  variables:
+    ECR_REPO: 685254833852.dkr.ecr.us-east-1.amazonaws.com
+    ECR_REGION: us-east-1 
+    CONTAINER_NAME: order
+    IMAGE_TAG: latest
+    REPO_NAME: order
+
+phases:
+  pre_build:
+    commands:
+      - echo install dependencies and login to ECR
+      - npm install
+      - echo "Logging into ECR.."
+      - aws ecr get-login-password --region ${ECR_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}
+  build:
+    commands:
+      - echo "testing code"
+      - npm run test
+      - echo "building image"
+      - docker build -t ${ECR_REPO}/${REPO_NAME}:latest .
+      - docker tag -t ${ECR_REPO}/${REPO_NAME}:latest  ${ECR_REPO}/${REPO_NAME}:$v{CODEBUILD_BUILD_NUMBER}
+      - echo "build success"
+  post_build:
+    commands:
+      - aws ecr get-login-password --region ${ECR_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}
+      - docker push ${ECR_REPO}/${REPO_NAME}:latest
+      - docker push ${ECR_REPO}/${REPO_NAME}:$v{CODEBUILD_BUILD_NUMBER}
+      - printf '[{"name":"%s","imageUri:"%s"}]' ${CONTAINER_NAME} ${ECR_REPO}/${REPO_NAME}:latest > imagedefinitions.json
+      - echo "build complete..."
+
+reports: # Report file
+  test-report:
+    files:
+      - 'report/test-result.xml'
+    file-format: JUNITXML
+artifacts:
+  files:
+    - imagedefinitions.json
