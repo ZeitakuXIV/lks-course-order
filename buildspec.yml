@@ -21,7 +21,7 @@ phases:
       - npm run test
       - echo "building image"
       - docker build -t ${ECR_REPO}/${REPO_NAME}:latest .
-      - docker tag ${ECR_REPO}/${REPO_NAME}:latest ${ECR_REPO}/${REPO_NAME}:$v{CODEBUILD_BUILD_NUMBER}
+      - docker tag ${ECR_REPO}/${REPO_NAME}:latest ${ECR_REPO}/${REPO_NAME}:v${CODEBUILD_BUILD_NUMBER}
       - echo "build success"
   post_build:
     commands:
